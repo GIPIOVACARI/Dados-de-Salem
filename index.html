@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Círculo de Salém</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url("./imagens/fundo.png");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .info {
+      margin-bottom: 15px;
+      font-size: 14px;
+      opacity: 0.9;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    }
+
+    #indicador, #jackpot {
+      margin-bottom: 15px;
+      font-weight: bold;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    #indicador {
+      color: #ffd54f;
+      display: none;
+    }
+
+    #jackpot {
+      color: #ff4081;
+      display: none;
+      font-size: 20px;
+    }
+
+    .dados {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      gap: 10px;
+      margin: 0 auto 20px auto;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      padding: 15px;
+      border-radius: 18px;
+    }
+
+    .dado {
+      width: 70px;
+      height: 70px;
+      border-radius: 18px;
+      cursor: pointer;
+      user-select: none;
+      border: 4px solid transparent;
+      background-color: #ffffff;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: transform 0.15s ease, border 0.15s ease, opacity 0.15s ease;
+    }
+
+    .dado.selecionado {
+      border: 4px solid #4caf50;
+      transform: scale(1.05);
+      opacity: 0.85;
+    }
+
+    .dado.congelado {
+      cursor: default;
+      opacity: 0.7;
+    }
+
+    .rolando {
+      animation: rolar 0.4s ease-in-out;
+    }
+
+    @keyframes rolar {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(15deg) scale(1.05); }
+      50%  { transform: rotate(-15deg) scale(1.1); }
+      75%  { transform: rotate(10deg) scale(1.05); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+
+    .botoes {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .botoes button {
+      padding: 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #4caf50;
+      color: #fff;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+    }
+
+    .botoes button:disabled {
+      background: #777;
+      cursor: not-allowed;
+    }
+
+    /* Botões de som menores */
+    .som-botoes {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .som-botoes button {
+      padding: 8px 12px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 8px;
+    }
+
+    .som-botoes img {
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .dados {
+        grid-template-columns: repeat(6, 70px);
+        max-width: 520px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<h1>Dados de Salém</h1>
+
+<div class="info">
+  Clique nos dados para <b>mantê-los</b>.  
+  Você pode rolar até <b>3 vezes</b>.
+</div>
+
+<div id="indicador">✨ Trinca formada!</div>
+<div id="jackpot">✨ JACKPOT! ✨</div>
+
+<div class="dados" id="dados">
+  <div class="dado"></div>
+  <div class="dado"></div>
+  <div class="dado"></div>
+  <div class="dado"></div>
+  <div class="dado"></div>
+  <div class="dado"></div>
+</div>
+
+<div class="botoes">
+  <button id="botaoRolar">Rolar Dados (1/3)</button>
+  <button id="botaoReset">Reiniciar</button>
+</div>
+
+<div class="som-botoes">
+  <button id="toggleSomRolagem"><img id="iconRolagem" src="./imagens/som-on.png"> Rolagem</button>
+  <button id="toggleSomSelecionar"><img id="iconSelecionar" src="./imagens/som-on.png"> Seleção</button>
+  <button id="toggleTodosSons"><img id="iconTodos" src="./imagens/som-on.png"> Todos</button>
+</div>
+
+<!-- Sons -->
+<audio id="somRolagem" src="./sons/rolar.mp3"></audio>
+<audio id="somSelecionar" src="./sons/selecionar.mp3"></audio>
+
+<script>
+  let rolagens = 0;
+  const maxRolagens = 3;
+
+  const dados = document.querySelectorAll(".dado");
+  const botaoRolar = document.getElementById("botaoRolar");
+  const botaoReset = document.getElementById("botaoReset");
+  const indicador = document.getElementById("indicador");
+  const jackpot = document.getElementById("jackpot");
+  const somRolagem = document.getElementById("somRolagem");
+  const somSelecionar = document.getElementById("somSelecionar");
+
+  // Flags de som
+  let somRolagemAtivo = true;
+  let somSelecionarAtivo = true;
+  let todosSonsAtivo = true;
+
+  const iconRolagem = document.getElementById("iconRolagem");
+  const iconSelecionar = document.getElementById("iconSelecionar");
+  const iconTodos = document.getElementById("iconTodos");
+
+  function aplicarVisual(dado, valor) {
+    dado.style.backgroundImage = `url("./imagens/dado${valor}.png")`;
+    dado.dataset.valor = valor;
+  }
+
+  function verificarTrinca() {
+    const contagem = { 1: 0, 2: 0, 3: 0 };
+    dados.forEach(dado => {
+      if (dado.classList.contains("selecionado")) {
+        const valor = Number(dado.dataset.valor);
+        if (valor >= 1 && valor <= 3) contagem[valor]++;
+      }
+    });
+    indicador.style.display = Object.values(contagem).some(qtd => qtd >= 3) ? "block" : "none";
+  }
+
+  function verificarJackpot() {
+    const valoresSelecionados = new Set();
+    dados.forEach(dado => {
+      if (dado.classList.contains("selecionado")) {
+        valoresSelecionados.add(Number(dado.dataset.valor));
+      }
+    });
+    // Se selecionou pelo menos 1 dado de cada valor 1 a 6
+    if (valoresSelecionados.size === 6) {
+      jackpot.style.display = "block";
+    } else {
+      jackpot.style.display = "none";
+    }
+  }
+
+  dados.forEach(dado => {
+    dado.addEventListener("click", () => {
+      if (rolagens === 0) return; // não permite seleção antes da primeira rolagem
+      if (!dado.dataset.valor) return;
+      if (dado.classList.contains("congelado")) return;
+
+      if (somSelecionarAtivo && todosSonsAtivo) {
+        somSelecionar.currentTime = 0;
+        somSelecionar.play();
+      }
+
+      dado.classList.toggle("selecionado");
+      verificarTrinca();
+      verificarJackpot();
+    });
+  });
+
+  function rolarDados() {
+    if (rolagens >= maxRolagens) return;
+
+    if (somRolagemAtivo && todosSonsAtivo) {
+      somRolagem.currentTime = 0;
+      somRolagem.play();
+    }
+
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    if (rolagens >= 1) {
+      dados.forEach(dado => {
+        if (dado.classList.contains("selecionado")) {
+          dado.classList.add("congelado");
+        }
+      });
+    }
+
+    dados.forEach(dado => {
+      if (!dado.classList.contains("selecionado")) {
+        dado.classList.add("rolando");
+        const valor = Math.floor(Math.random() * 6) + 1;
+
+        setTimeout(() => {
+          aplicarVisual(dado, valor);
+          dado.classList.remove("rolando");
+          verificarTrinca();
+          verificarJackpot();
+        }, 300);
+      }
+    });
+
+    rolagens++;
+    botaoRolar.textContent = `Rolar Dados (${rolagens + 1}/${maxRolagens})`;
+
+    if (rolagens >= maxRolagens) {
+      botaoRolar.disabled = true;
+      botaoRolar.textContent = "Rolagens finalizadas";
+    }
+  }
+
+  function resetar() {
+    rolagens = 0;
+    botaoRolar.disabled = false;
+    botaoRolar.textContent = "Rolar Dados (1/3)";
+    indicador.style.display = "none";
+    jackpot.style.display = "none";
+
+    dados.forEach(dado => {
+      dado.classList.remove("selecionado", "congelado");
+      aplicarVisual(dado, 1);
+    });
+  }
+
+  // Toggle de sons com ícones
+  document.getElementById("toggleSomRolagem").addEventListener("click", () => {
+    somRolagemAtivo = !somRolagemAtivo;
+    iconRolagem.src = somRolagemAtivo ? "./imagens/som-on.png" : "./imagens/som-off.png";
+  });
+
+  document.getElementById("toggleSomSelecionar").addEventListener("click", () => {
+    somSelecionarAtivo = !somSelecionarAtivo;
+    iconSelecionar.src = somSelecionarAtivo ? "./imagens/som-on.png" : "./imagens/som-off.png";
+  });
+
+  document.getElementById("toggleTodosSons").addEventListener("click", () => {
+    todosSonsAtivo = !todosSonsAtivo;
+    iconTodos.src = todosSonsAtivo ? "./imagens/som-on.png" : "./imagens/som-off.png";
+  });
+
+  botaoRolar.addEventListener("click", rolarDados);
+  botaoReset.addEventListener("click", resetar);
+
+  dados.forEach(dado => aplicarVisual(dado, 1));
+</script>
+</body>
+</html>
