@@ -107,6 +107,7 @@
       gap: 10px;
       width: 100%;
       max-width: 360px;
+      margin-bottom: 15px;
     }
 
     .botoes button {
@@ -179,6 +180,8 @@
 <div class="botoes">
   <button id="botaoRolar">Rolar Dados (1/3)</button>
   <button id="botaoReset">Reiniciar</button>
+  <button id="botaoAdicionar">➕ Adicionar Dado</button>
+  <button id="botaoRemover">➖ Remover Dado</button>
 </div>
 
 <div class="som-botoes">
@@ -195,9 +198,12 @@
   let rolagens = 0;
   const maxRolagens = 3;
 
-  const dados = document.querySelectorAll(".dado");
+  const containerDados = document.getElementById("dados");
+  const dados = () => containerDados.querySelectorAll(".dado");
   const botaoRolar = document.getElementById("botaoRolar");
   const botaoReset = document.getElementById("botaoReset");
+  const botaoAdicionar = document.getElementById("botaoAdicionar");
+  const botaoRemover = document.getElementById("botaoRemover");
   const indicador = document.getElementById("indicador");
   const jackpot = document.getElementById("jackpot");
   const somRolagem = document.getElementById("somRolagem");
@@ -219,7 +225,7 @@
 
   function verificarTrinca() {
     const contagem = { 1: 0, 2: 0, 3: 0 };
-    dados.forEach(dado => {
+    dados().forEach(dado => {
       if (dado.classList.contains("selecionado")) {
         const valor = Number(dado.dataset.valor);
         if (valor >= 1 && valor <= 3) contagem[valor]++;
@@ -230,22 +236,17 @@
 
   function verificarJackpot() {
     const valoresSelecionados = new Set();
-    dados.forEach(dado => {
+    dados().forEach(dado => {
       if (dado.classList.contains("selecionado")) {
         valoresSelecionados.add(Number(dado.dataset.valor));
       }
     });
-    // Se selecionou pelo menos 1 dado de cada valor 1 a 6
-    if (valoresSelecionados.size === 6) {
-      jackpot.style.display = "block";
-    } else {
-      jackpot.style.display = "none";
-    }
+    jackpot.style.display = valoresSelecionados.size === 6 ? "block" : "none";
   }
 
-  dados.forEach(dado => {
+  function configurarDado(dado) {
     dado.addEventListener("click", () => {
-      if (rolagens === 0) return; // não permite seleção antes da primeira rolagem
+      if (rolagens === 0) return;
       if (!dado.dataset.valor) return;
       if (dado.classList.contains("congelado")) return;
 
@@ -258,7 +259,15 @@
       verificarTrinca();
       verificarJackpot();
     });
-  });
+  }
+
+  function criarDado() {
+    const dado = document.createElement("div");
+    dado.classList.add("dado");
+    aplicarVisual(dado, 1);
+    configurarDado(dado);
+    return dado;
+  }
 
   function rolarDados() {
     if (rolagens >= maxRolagens) return;
@@ -271,14 +280,14 @@
     if (navigator.vibrate) navigator.vibrate(200);
 
     if (rolagens >= 1) {
-      dados.forEach(dado => {
+      dados().forEach(dado => {
         if (dado.classList.contains("selecionado")) {
           dado.classList.add("congelado");
         }
       });
     }
 
-    dados.forEach(dado => {
+    dados().forEach(dado => {
       if (!dado.classList.contains("selecionado")) {
         dado.classList.add("rolando");
         const valor = Math.floor(Math.random() * 6) + 1;
@@ -308,13 +317,13 @@
     indicador.style.display = "none";
     jackpot.style.display = "none";
 
-    dados.forEach(dado => {
+    dados().forEach(dado => {
       dado.classList.remove("selecionado", "congelado");
       aplicarVisual(dado, 1);
     });
   }
 
-  // Toggle de sons com ícones
+  // Toggle de sons
   document.getElementById("toggleSomRolagem").addEventListener("click", () => {
     somRolagemAtivo = !somRolagemAtivo;
     iconRolagem.src = somRolagemAtivo ? "./imagens/som-on.png" : "./imagens/som-off.png";
@@ -330,10 +339,22 @@
     iconTodos.src = todosSonsAtivo ? "./imagens/som-on.png" : "./imagens/som-off.png";
   });
 
+  // Adicionar/Remover dados
+  botaoAdicionar.addEventListener("click", () => {
+    containerDados.appendChild(criarDado());
+  });
+
+  botaoRemover.addEventListener("click", () => {
+    const todos = dados();
+    if (todos.length > 0) containerDados.removeChild(todos[todos.length - 1]);
+  });
+
+  // Inicialização
   botaoRolar.addEventListener("click", rolarDados);
   botaoReset.addEventListener("click", resetar);
-
-  dados.forEach(dado => aplicarVisual(dado, 1));
+  dados().forEach(dado => aplicarVisual(dado, 1));
+  dados().forEach(dado => configurarDado(dado));
 </script>
+
 </body>
 </html>
