@@ -116,14 +116,33 @@
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      background: #4caf50;
-      color: #fff;
       box-shadow: 0 3px 6px rgba(0,0,0,0.5);
     }
 
     .botoes button:disabled {
       background: #777;
       cursor: not-allowed;
+    }
+
+    /* Botões específicos */
+    button#botaoRolar {
+      background: #4caf50;
+      color: #fff;
+    }
+
+    button#botaoReset {
+      background: #2196f3;
+      color: #fff;
+    }
+
+    button#botaoAdicionar {
+      background: #ffeb3b;
+      color: #000;
+    }
+
+    button#botaoRemover {
+      background: #f44336;
+      color: #fff;
     }
 
     /* Botões de som menores */
@@ -209,7 +228,6 @@
   const somRolagem = document.getElementById("somRolagem");
   const somSelecionar = document.getElementById("somSelecionar");
 
-  // Flags de som
   let somRolagemAtivo = true;
   let somSelecionarAtivo = true;
   let todosSonsAtivo = true;
